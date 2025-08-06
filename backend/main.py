@@ -19,14 +19,16 @@ app = FastAPI(
     description="An API to generate a README.md from a public GitHub repository.",
     version="1.0.0"
 )
-
 app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[os.getenv("FRONTEND_URL")],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+        CORSMiddleware(
+            allow_origins=[
+                "https://ai-readme-generator.tushr.xyz"
+            ],
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
+    )
 
 client = openai.OpenAI()
 
@@ -173,7 +175,7 @@ async def generate_readme_endpoint(request: RepoRequest):
 
         print("Generating README with OpenAI API...")
         chat_completion = client.chat.completions.create(
-            model="gpt-3.5-turbo", 
+            model="gpt-4o", 
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
