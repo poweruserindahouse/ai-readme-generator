@@ -2,13 +2,15 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Textarea } from '@/components/ui/textarea';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, Copy, Download, AlertCircle, Github } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import axios from 'axios';
+import ReactMarkdown from 'react-markdown';
 
+// This interface now matches the backend's JSON response: {"readme": "..."}
 interface GeneratedContent {
-  markdown: string;
+  readme: string;
 }
 
 export const ReadmeGenerator = () => {
@@ -19,42 +21,9 @@ export const ReadmeGenerator = () => {
   const { toast } = useToast();
 
   const validateGitHubUrl = (url: string): boolean => {
-    const githubRegex = /^https:\/\/github\.com\/[\w\-\.]+\/[\w\-\.]+\/?$/;
+    // A simple regex to validate the basic structure of a GitHub repo URL.
+    const githubRegex = /^https:\/\/github\.com\/[\w\-\.]+\/[\w\-\.]+$/;
     return githubRegex.test(url);
-  };
-
-  const simulateGeneration = async (): Promise<string> => {
-    // Simulate AI generation process
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    
-    return `# Project Name
-
-A comprehensive project description goes here.
-
-## Features
-
-- Feature 1: Description of the first key feature
-- Feature 2: Description of the second key feature  
-- Feature 3: Description of the third key feature
-
-## Installation
-
-\`\`\`bash
-npm install
-npm start
-\`\`\`
-
-## Usage
-
-Instructions on how to use this project...
-
-## Contributing
-
-Guidelines for contributing to this project...
-
-## License
-
-This project is licensed under the MIT License.`;
   };
 
   const handleGenerate = async () => {
@@ -71,18 +40,31 @@ This project is licensed under the MIT License.`;
     }
 
     setIsLoading(true);
+    setGeneratedContent(null); // Clear previous results
     
     try {
-      // Simulate the generation process
-      const markdown = await simulateGeneration();
-      setGeneratedContent({ markdown });
+      // The API call now points to the full backend URL.
+      // The payload key is 'repo_url' to match the Pydantic model in the backend.
+      const response = await axios.post(`${import.meta.env.VITE_API_URL}/generate-readme`, {
+        repo_url: url,
+      });
+
+      // Set the state with the 'readme' field from the response.
+      setGeneratedContent({ readme: response.data.readme });
       
       toast({
         title: "Success!",
         description: "README generated successfully.",
       });
     } catch (err) {
-      setError('Failed to generate README. Please try again.');
+      // Improved error handling to display specific messages from the backend.
+      if (axios.isAxiosError(err) && err.response) {
+        // err.response.data.detail is the error message from FastAPI's HTTPException
+        setError(err.response.data.detail || 'An unknown error occurred during generation.');
+      } else {
+        // This handles network errors or if the backend server isn't running.
+        setError('Failed to connect to the server. Please ensure it is running and accessible.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -90,7 +72,8 @@ This project is licensed under the MIT License.`;
 
   const handleCopy = async () => {
     if (generatedContent) {
-      await navigator.clipboard.writeText(generatedContent.markdown);
+      // Use the 'readme' field for the clipboard content.
+      await navigator.clipboard.writeText(generatedContent.readme);
       toast({
         title: "Copied!",
         description: "README content copied to clipboard.",
@@ -100,15 +83,16 @@ This project is licensed under the MIT License.`;
 
   const handleDownload = () => {
     if (generatedContent) {
-      const blob = new Blob([generatedContent.markdown], { type: 'text/markdown' });
-      const url = URL.createObjectURL(blob);
+      // Use the 'readme' field for the downloadable file.
+      const blob = new Blob([generatedContent.readme], { type: 'text/markdown' });
+      const blobUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = url;
+      a.href = blobUrl;
       a.download = 'README.md';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      URL.revokeObjectURL(blobUrl);
       
       toast({
         title: "Downloaded!",
@@ -118,7 +102,13 @@ This project is licensed under the MIT License.`;
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4"
+    onKeyPress={(e) => {
+      if (e.key === 'Enter') {
+        handleGenerate();
+      }}
+    }
+    >
       <Card className="w-full max-w-4xl shadow-card bg-gradient-card border-border">
         <CardHeader className="text-center space-y-4">
           <div className="flex items-center justify-center gap-3">
@@ -164,7 +154,7 @@ This project is licensed under the MIT License.`;
           </div>
 
           {/* Loading State */}
-          {isLoading && (
+          {isLoading && !error && (
             <div className="text-center py-8">
               <div className="inline-flex items-center gap-3 text-muted-foreground">
                 <Loader2 className="h-5 w-5 animate-spin text-primary" />
@@ -177,6 +167,7 @@ This project is licensed under the MIT License.`;
           {error && (
             <Alert variant="destructive" className="border-destructive/50 bg-destructive/10">
               <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Error</AlertTitle>
               <AlertDescription className="font-medium">
                 {error}
               </AlertDescription>
@@ -209,13 +200,40 @@ This project is licensed under the MIT License.`;
                   </Button>
                 </div>
 
-                {/* Generated Content */}
-                <div className="rounded-lg border border-border bg-muted/30 p-4">
-                  <Textarea
-                    value={generatedContent.markdown}
-                    readOnly
-                    className="min-h-[400px] font-mono text-sm bg-transparent border-0 resize-none focus:ring-0 text-foreground"
-                  />
+                {/* ===== FINAL VERSION WITH ALL OVERRIDES ===== */}
+                <div 
+                  className="prose dark:prose-invert max-w-none rounded-lg border border-border bg-muted/30 p-6
+                  
+                  /*
+                    This is the most forceful override possible.
+                    It targets every common markdown element to ensure all text is white.
+                  */
+                  dark:!text-foreground
+                  dark:[&_p]:!text-foreground
+                  dark:[&_h1]:!text-foreground
+                  dark:[&_h2]:!text-foreground
+                  dark:[&_h3]:!text-foreground
+                  dark:[&_h4]:!text-foreground
+                  dark:[&_h5]:!text-foreground
+                  dark:[&_h6]:!text-foreground
+                  dark:[&_li]:!text-foreground
+                  dark:[&_ul]:!text-foreground
+                  dark:[&_ol]:!text-foreground
+                  dark:[&_strong]:!text-foreground
+                  dark:[&_em]:!text-foreground
+                  dark:[&_blockquote]:!text-foreground
+                  dark:[&_code]:!text-foreground
+                  dark:[&_a]:!text-foreground
+                  dark:[&_thead]:!text-foreground
+                  dark:[&_tbody]:!text-foreground
+                  dark:[&_tr]:!text-foreground
+                  dark:[&_th]:!text-foreground
+                  dark:[&_td]:!text-foreground
+                  "
+                >
+                  <ReactMarkdown>
+                    {generatedContent.readme}
+                  </ReactMarkdown>
                 </div>
               </>
             ) : (
