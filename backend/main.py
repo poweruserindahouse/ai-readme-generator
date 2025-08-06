@@ -19,16 +19,16 @@ app = FastAPI(
     description="An API to generate a README.md from a public GitHub repository.",
     version="1.0.0"
 )
+
 app.add_middleware(
-        CORSMiddleware(
-            allow_origins=[
-                "https://ai-readme-generator.tushr.xyz"
-            ],
-            allow_credentials=True,
-            allow_methods=["*"],
-            allow_headers=["*"],
-        )
-    )
+    CORSMiddleware,
+    allow_origins=[
+        "https://ai-readme-generator.tushr.xyz"
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 client = openai.OpenAI()
 
