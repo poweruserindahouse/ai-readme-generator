@@ -99,7 +99,39 @@ export default {
                 'accordion-down': 'accordion-down 0.2s ease-out',
                 'accordion-up': 'accordion-up 0.2s ease-out'
             },
-            // <<< --- THE ENTIRE 'typography' SECTION HAS BEEN REMOVED FROM HERE
+            typography: {
+                DEFAULT: {
+                    css: {
+                        color: 'hsl(var(--foreground))',
+                        a: {
+                            color: 'hsl(var(--primary))',
+                            '&:hover': {
+                                color: 'hsl(var(--primary-foreground))',
+                            },
+                        },
+                        h1: { color: 'hsl(var(--foreground))' },
+                        h2: { color: 'hsl(var(--foreground))' },
+                        h3: { color: 'hsl(var(--foreground))' },
+                        h4: { color: 'hsl(var(--foreground))' },
+                        p: { color: 'hsl(var(--foreground))' },
+                        strong: { color: 'hsl(var(--foreground))' },
+                        code: {
+                            color: 'hsl(var(--foreground))',
+                            backgroundColor: 'hsl(var(--muted))',
+                            padding: '0.2em 0.4em',
+                            borderRadius: '0.25rem',
+                        },
+                        pre: {
+                            backgroundColor: 'hsl(var(--muted))',
+                            color: 'hsl(var(--foreground))',
+                        },
+                        blockquote: {
+                            color: 'hsl(var(--foreground))',
+                            borderLeftColor: 'hsl(var(--primary))',
+                        },
+                    },
+                },
+            },
         }
     },
     // Ensure you have both plugins listed here.
